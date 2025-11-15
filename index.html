@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Protege+ Vacinas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+            min-height: 100vh;
+            display: flex;
+            margin: 0;
+        }
+
+        .left-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .left-section img {
+            max-width: 550px;
+            max-height: 550px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .container {
+            width: 50%;
+            padding: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }  
+
+
+        .login-box {
+            background: white;
+            border: 3px solid #1100ff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+        }
+
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            font-size: 14px;
+        }
+
+        .remember-forgot input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .remember-forgot a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .remember-forgot a:hover {
+            text-decoration: underline;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(135deg, #002fff 0%, #1900ff 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .signup-link {
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .signup-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .success-message {
+            color: #27ae60;
+            font-size: 13px;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="left-section">
+        <img src="imgs/logo.jpeg" alt="Protege+ Vacinas" onerror="this.src='https://via.placeholder.com/400x500?text=Protege+Vacinas'">
+    </div>
+
+    <div class="container">
+        <div class="login-box">
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                    <div class="error-message" id="emailError"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" name="password" placeholder="Digite sua senha" required>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+
+                <div class="remember-forgot">
+                    <label>
+                        <input type="checkbox" name="remember"> Lembrar-me
+                    </label>
+                    <a href="#">Esqueceu a senha?</a>
+                </div>
+
+                <button type="submit">Entrar</button>
+                <div class="success-message" id="successMessage">Login realizado com sucesso!</div>
+            </form>
+
+            <div class="signup-link">
+                Não tem conta? <a href="#">Cadastre-se aqui</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const successMessage = document.getElementById('successMessage');
+
+        // Validação do email
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Limpar mensagens de erro
+        emailInput.addEventListener('focus', () => {
+            emailError.style.display = 'none';
+        });
+
+        passwordInput.addEventListener('focus', () => {
+            passwordError.style.display = 'none';
+        });
+
+        // Manipular submissão do formulário
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            let isValid = true;
+
+            // Validar email
+            if (!emailInput.value) {
+                emailError.textContent = 'Email é obrigatório';
+                emailError.style.display = 'block';
+                isValid = false;
+            } else if (!validateEmail(emailInput.value)) {
+                emailError.textContent = 'Email inválido';
+                emailError.style.display = 'block';
+                isValid = false;
+            }
+
+            // Validar senha
+            if (!passwordInput.value) {
+                passwordError.textContent = 'Senha é obrigatória';
+                passwordError.style.display = 'block';
+                isValid = false;
+            } else if (passwordInput.value.length < 6) {
+                passwordError.textContent = 'Senha deve ter pelo menos 6 caracteres';
+                passwordError.style.display = 'block';
+                isValid = false;
+            }
+
+            // Se válido, simular login
+            if (isValid) {
+                successMessage.style.display = 'block';
+                console.log('Login realizado com:', {
+                    email: emailInput.value,
+                    lembrar: document.querySelector('input[name="remember"]').checked
+                });
+
+                // Limpar formulário após 2 segundos
+                setTimeout(() => {
+                    loginForm.reset();
+                    successMessage.style.display = 'none';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html>
