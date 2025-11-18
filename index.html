@@ -4,6 +4,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Calendário Interativo - Protege Vacinas</title>
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
 <style>
   /* Reset básico */
   * {
@@ -229,6 +231,20 @@
     background-color: #00275c;
   }
 
+  .btn-delete-event {
+  margin-left: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: red;
+  font-weight: bold;
+}
+
+.btn-delete-event:hover {
+  transform: scale(1.2);
+}
+
+
   /* Tooltip */
   .tooltip {
     position: absolute;
@@ -345,7 +361,6 @@
   }
 </style>
 </head>
-<body>
 <header class="topbar">
   <div class="logo">
     <img src="/imgs/logo.jpeg" alt="Protege Vacinas" />
@@ -355,6 +370,7 @@
     <span class="username">Usuário</span>
   </div>
 </header>
+
 <div class="dashboard">
 
   <!-- Botões laterais -->
@@ -374,11 +390,11 @@
   </div>
 
   <!-- Notas -->
-  <div class="notes" aria-label="Notas importantes">
-    <div class="notes-title">notas</div>
-    <div>9/4 vacina em posto de igarassu</div>
-    <div>25/2 chegada de remedios</div>
-  </div>
+<div class="notes" aria-label="Próximos eventos">
+  <div class="notes-title">próximos eventos</div>
+  <div id="notesList"></div>
+</div>
+
 
   <!-- Calendário -->
   <section class="calendar-container" aria-label="Calendário de vacinação">
@@ -401,9 +417,7 @@
           <th scope="col">dom</th>
         </tr>
       </thead>
-      <tbody id="calendarBody">
-        <!-- Dias vão ser inseridos aqui -->
-      </tbody>
+      <tbody id="calendarBody"></tbody>
     </table>
     <button id="clearEventsBtn" class="btn btn-cancel" style="margin-top:16px;">Limpar eventos</button>
   </section>
@@ -425,7 +439,8 @@
 <div class="tooltip" id="tooltip"></div>
 
 <script>
-(() => {
+document.addEventListener('DOMContentLoaded', () => {
+
   const calendarBody = document.getElementById('calendarBody');
   const monthYear = document.getElementById('monthYear');
   const prevMonthBtn = document.getElementById('prevMonth');
@@ -440,215 +455,170 @@
   let currentDate = new Date();
   let currentMonth = currentDate.getMonth();
   let currentYear = currentDate.getFullYear();
-
-  // Eventos salvos { 'YYYY-MM-DD': ['evento1', 'evento2'] }
-  let events = JSON.parse(localStorage.getItem('pv_events')) || {};
-
   let selectedDateStr = null;
 
-  // Atualiza título mês e ano
-  function updateMonthYear() {
-    const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+  // Eventos { 'YYYY-MM-DD': ['evento1', ...] }
+  let events = JSON.parse(localStorage.getItem('pv_events')) || {};
+
+  const notesList = document.getElementById('notesList');
+
+function updateNotes() {
+  notesList.innerHTML = '';
+  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+  // Pega todas as datas futuras
+  const futureDates = Object.keys(events)
+    .filter(date => date >= todayStr)
+    .sort();
+
+  if(futureDates.length === 0) {
+    notesList.innerHTML = '<div>Não há próximos eventos.</div>';
+    return;
+  }
+
+  let count = 0;
+  for (const dateStr of futureDates) {
+    for (let i = 0; i < events[dateStr].length; i++) {
+      if (count >= 5) return; // mostra no máximo 5
+
+      const ev = events[dateStr][i];
+      const dateObj = new Date(dateStr);
+      const formatted = `${dateObj.getDate()}/${dateObj.getMonth() + 1} - ${ev}`;
+
+      const div = document.createElement('div');
+      div.classList.add('note-event');
+
+      const span = document.createElement('span');
+      span.textContent = formatted;
+
+      // Botão de excluir
+      const btnDelete = document.createElement('button');
+      btnDelete.textContent = '❌';
+      btnDelete.classList.add('btn-delete-event');
+      btnDelete.addEventListener('click', () => {
+        removeEvent(dateStr, i);
+      });
+
+      div.appendChild(span);
+      div.appendChild(btnDelete);
+      notesList.appendChild(div);
+
+      count++;
+    }
+  }
+}
+  function removeEvent(dateStr, index) {
+    if (events[dateStr]) {
+      events[dateStr].splice(index, 1);
+      if (events[dateStr].length === 0) {
+        delete events[dateStr];
+      }
+      localStorage.setItem('pv_events', JSON.stringify(events));
+      generateCalendar(currentMonth, currentYear);
+      updateNotes();
+    }
+  }
+
+
+  function pad(n){ return n<10?'0'+n:n; }
+
+  function updateMonthYear(){
+    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     monthYear.textContent = `${months[currentMonth]} ${currentYear}`;
   }
 
-  // Formata número com zero à esquerda
-  function pad(n) {
-    return n < 10 ? '0' + n : n;
-  }
-
-  // Gera calendário
-  function generateCalendar(month, year) {
+  function generateCalendar(month, year){
     calendarBody.innerHTML = '';
-
-    // Primeiro dia do mês
     const firstDay = new Date(year, month, 1);
-    // Último dia do mês
-    const lastDay = new Date(year, month + 1, 0);
-    // Dia da semana do primeiro dia (seg=1..dom=7)
-    // Em JS, domingo=0..sábado=6
-    let startDay = firstDay.getDay(); // domingo=0
-    // Ajusta para segunda-feira início
-    startDay = startDay === 0 ? 7 : startDay;
-
-    // Quantidade de dias no mês
+    const lastDay = new Date(year, month+1, 0);
+    let startDay = firstDay.getDay(); startDay = startDay===0?7:startDay;
     const daysInMonth = lastDay.getDate();
-
-    // Calcula quantos dias da semana anterior vão aparecer
-    // Para preencher a semana começando na seg.
-    // Exemplo: se começa na quarta (4), aparecem 3 dias antes
-    let prevDays = startDay - 1;
-
-    // Último dia do mês anterior
     const lastDayPrevMonth = new Date(year, month, 0).getDate();
-
-    // Total linhas - geralmente 5 a 6 semanas
     const totalCells = 42;
+    let dayNum=1, nextMonthDay=1;
 
-    // Preenche as células
-    let dayNum = 1;
-    let nextMonthDay = 1;
+    for(let i=1;i<=totalCells;i++){
+      let tr=i%7===1?document.createElement('tr'):calendarBody.lastElementChild;
+      if(!calendarBody.lastElementChild || i%7===1) calendarBody.appendChild(tr);
+      let td=document.createElement('td');
 
-    for (let i = 1; i <= totalCells; i++) {
-      const tr = i % 7 === 1 ? document.createElement('tr') : calendarBody.lastElementChild;
+      if(i<=startDay-1){ td.textContent = lastDayPrevMonth-(startDay-2)+i-1; td.classList.add('disabled'); }
+      else if(dayNum<=daysInMonth){
+        td.textContent=dayNum;
+        const dateStr=`${year}-${pad(month+1)}-${pad(dayNum)}`;
+        td.dataset.date=dateStr;
+        td.tabIndex=0;
+        td.setAttribute('role','gridcell');
+        td.setAttribute('aria-label',`Dia ${dayNum} de ${monthYear.textContent}`);
 
-      if (!calendarBody.lastElementChild || i % 7 === 1) {
-        calendarBody.appendChild(tr);
-      }
-
-      let td = document.createElement('td');
-
-      if (i <= prevDays) {
-        // Dias do mês anterior (desativados)
-        td.textContent = lastDayPrevMonth - prevDays + i;
-        td.classList.add('disabled');
-      } else if (dayNum <= daysInMonth) {
-        // Dias do mês atual
-        td.textContent = dayNum;
-
-        // Identificador da data para eventos YYYY-MM-DD
-        const dateStr = `${year}-${pad(month+1)}-${pad(dayNum)}`;
-        td.dataset.date = dateStr;
-        td.setAttribute('tabindex', '0');
-        td.setAttribute('role', 'gridcell');
-        td.setAttribute('aria-label', `Dia ${dayNum} de ${monthYear.textContent}`);
-
-        // Destacar dia atual
         const today = new Date();
-        if (dayNum === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+        if(dayNum===today.getDate() && month===today.getMonth() && year===today.getFullYear())
           td.classList.add('today');
-        }
 
-        // Eventos do dia
-        if(events[dateStr]) {
-          events[dateStr].forEach((evText, idx) => {
-            const span = document.createElement('span');
-            span.className = 'event';
-            span.textContent = evText.length > 12 ? evText.slice(0,12) + '...' : evText;
-            span.title = evText; // tooltip nativo para acessibilidade
-            span.dataset.date = dateStr;
-            span.dataset.idx = idx;
+        if(events[dateStr]){
+          events[dateStr].forEach((evText, idx)=>{
+            const span=document.createElement('span');
+            span.className='event';
+            span.textContent=evText.length>12?evText.slice(0,12)+'...':evText;
+            span.title=evText;
             td.appendChild(span);
           });
         }
 
-        // Clique para adicionar evento
-        td.addEventListener('click', () => {
-          selectedDateStr = dateStr;
-          eventText.value = '';
-          openModal();
-        });
-
-        // Teclado Enter para adicionar evento
-        td.addEventListener('keydown', e => {
-          if(e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            selectedDateStr = dateStr;
-            eventText.value = '';
-            openModal();
-          }
-        });
-
-      } else {
-        // Dias do mês seguinte (desativados)
-        td.textContent = nextMonthDay++;
-        td.classList.add('disabled');
-      }
+        td.addEventListener('click',()=>{ selectedDateStr=dateStr; eventText.value=''; modalBg.classList.add('show'); eventText.focus(); });
+        td.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectedDateStr=dateStr; eventText.value=''; modalBg.classList.add('show'); eventText.focus(); } });
+        dayNum++;
+      } else { td.textContent=nextMonthDay++; td.classList.add('disabled'); }
 
       tr.appendChild(td);
     }
   }
 
-  function openModal() {
-    modalBg.classList.add('show');
-    eventText.focus();
-  }
-
-  function closeModal() {
-    modalBg.classList.remove('show');
-    selectedDateStr = null;
-    eventText.value = '';
-  }
-
-  // Salva evento
-  function saveEvent() {
+  function closeModal(){ modalBg.classList.remove('show'); selectedDateStr=null; eventText.value=''; }
+  function saveEvent(){
     const text = eventText.value.trim();
-    if(text && selectedDateStr) {
-      if(!events[selectedDateStr]) {
-        events[selectedDateStr] = [];
-      }
+    if(text && selectedDateStr){
+      if(!events[selectedDateStr]) events[selectedDateStr]=[];
       events[selectedDateStr].push(text);
       localStorage.setItem('pv_events', JSON.stringify(events));
-      generateCalendar(currentMonth, currentYear);
+      generateCalendar(currentMonth,currentYear);
       closeModal();
-    } else {
-      alert('Por favor, digite um evento antes de salvar.');
-      eventText.focus();
-    }
+    } else { alert('Digite um evento antes de salvar'); eventText.focus(); }
   }
 
-  // Tooltip para eventos
   let tooltipTimeout;
-  document.body.addEventListener('mouseover', e => {
-    if(e.target.classList.contains('event')) {
+  document.body.addEventListener('mouseover', e=>{
+    if(e.target.classList.contains('event')){
       clearTimeout(tooltipTimeout);
-      tooltip.textContent = e.target.title || '';
-      const rect = e.target.getBoundingClientRect();
-      tooltip.style.top = (rect.top - 40) + 'px';
-      tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+      tooltip.textContent=e.target.title;
+      const rect=e.target.getBoundingClientRect();
+      tooltip.style.top=(rect.top-40)+'px';
+      tooltip.style.left=(rect.left+rect.width/2-tooltip.offsetWidth/2)+'px';
       tooltip.classList.add('show');
     }
   });
-  document.body.addEventListener('mouseout', e => {
-    if(e.target.classList.contains('event')) {
-      tooltipTimeout = setTimeout(() => tooltip.classList.remove('show'), 200);
+  document.body.addEventListener('mouseout', e=>{
+    if(e.target.classList.contains('event')){
+      tooltipTimeout=setTimeout(()=>tooltip.classList.remove('show'),200);
     }
   });
 
-  // Navegação meses
-  prevMonthBtn.addEventListener('click', () => {
-    if(currentMonth === 0) {
-      currentMonth = 11;
-      currentYear--;
-    } else {
-      currentMonth--;
-    }
-    updateMonthYear();
-    generateCalendar(currentMonth, currentYear);
-  });
-  nextMonthBtn.addEventListener('click', () => {
-    if(currentMonth === 11) {
-      currentMonth = 0;
-      currentYear++;
-    } else {
-      currentMonth++;
-    }
-    updateMonthYear();
-    generateCalendar(currentMonth, currentYear);
-  });
+  prevMonthBtn.addEventListener('click',()=>{ currentMonth===0?(currentMonth=11,currentYear--):currentMonth--; updateMonthYear(); generateCalendar(currentMonth,currentYear); });
+  nextMonthBtn.addEventListener('click',()=>{ currentMonth===11?(currentMonth=0,currentYear++):currentMonth++; updateMonthYear(); generateCalendar(currentMonth,currentYear); });
 
-  // Botões do modal
-  cancelBtn.addEventListener('click', closeModal);
-  saveBtn.addEventListener('click', saveEvent);
-  modalBg.addEventListener('click', e => {
-    if(e.target === modalBg) closeModal();
-  });
+  cancelBtn.addEventListener('click',closeModal);
+  saveBtn.addEventListener('click',saveEvent);
+  modalBg.addEventListener('click', e=>{ if(e.target===modalBg) closeModal(); });
 
-  // Limpar eventos
-  clearEventsBtn.addEventListener('click', () => {
-    if(confirm('Deseja realmente apagar todos os eventos salvos?')) {
-      events = {};
+  clearEventsBtn.addEventListener('click', ()=>{
+    if(confirm('Deseja realmente apagar todos os eventos?')){
+      events={};
       localStorage.removeItem('pv_events');
-      generateCalendar(currentMonth, currentYear);
+      generateCalendar(currentMonth,currentYear);
     }
   });
 
-  // Inicialização
   updateMonthYear();
-  generateCalendar(currentMonth, currentYear);
-
-})();
+  generateCalendar(currentMonth,currentYear);
+});
 </script>
-
-</body>
-</html>
