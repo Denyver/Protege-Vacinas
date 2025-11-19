@@ -1,624 +1,934 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Calendário Interativo - Protege Vacinas</title>
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/main.min.js"></script>
-<style>
-  /* Reset básico */
-  * {
-    box-sizing: border-box;
-  }
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f8fa;
-    margin: 0; padding: 0;
-    display: flex;
-    min-height: 100vh;
-    justify-content: center;
-    align-items: flex-start;
-    padding-top: 20px;
-    padding-top: 80px;
-    color: #222;
-  }
-
-  /* Topbar */
-.topbar {
-  position: fixed;
-  top: 0; left: 0; right: 0;
-  height: 60px;
-  background-color: #0047b3;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 24px;
-  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-  z-index: 1000;
-}
-
-.topbar .logo img {
-  height: 40px;
-}
-
-.topbar .profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: white;
-  cursor: pointer;
-}
-
-.topbar .profile .avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2px solid white;
-  transition: transform 0.2s;
-}
-
-.topbar .profile:hover .avatar,
-.topbar .profile:focus .avatar {
-  transform: scale(1.1);
-}
-
-.topbar .username {
-  font-weight: 600;
-  font-size: 1rem;
-  text-transform: lowercase;
-}
-
-
-  /* Container do dashboard */
-  .dashboard {
-    max-width: 1000px;
-    width: 100%;
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-  }
-
-  /* Botões laterais */
-  .sidebar {
-    flex: 1 1 200px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-  }
-  .btn-sidebar {
-    background-color: #0047b3;
-    border-radius: 8px;
-    padding: 16px;
-    color: white;
-    font-size: 1.25rem;
-    font-weight: 600;
-    text-transform: lowercase;
-    cursor: pointer;
-    border: none;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    transition: background-color 0.3s;
-  }
-  .btn-sidebar:hover {
-    background-color: #00337a;
-  }
-  .btn-sidebar svg {
-    width: 28px;
-    height: 28px;
-    stroke: white;
-    stroke-width: 2;
-  }
-
-  /* Notas */
-  .notes {
-    flex: 0 1 140px;
-    border: 1px solid #0047b3;
-    border-radius: 8px;
-    padding: 16px;
-    font-size: 1rem;
-    line-height: 1.5;
-    user-select: none;
-  }
-  .notes-title {
-    font-weight: 700;
-    margin-bottom: 12px;
-    text-transform: lowercase;
-  }
-
-  /* Calendário */
-  .calendar-container {
-    flex: 2 1 600px;
-    border: 3px solid #0047b3;
-    border-radius: 0 20px 20px 0;
-    padding: 24px 32px;
-    background: white;
-    box-shadow: 0 5px 15px rgba(0, 71, 179, 0.15);
-    position: relative;
-    overflow-x: auto;
-  }
-
-  .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-
-  .calendar-title {
-    font-weight: 700;
-    font-size: 1.5rem;
-    color: #0047b3;
-    text-transform: lowercase;
-  }
-
-  .nav-buttons {
-    display: flex;
-    gap: 12px;
-  }
-  .nav-btn {
-    background-color: #0047b3;
-    border: none;
-    color: white;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1.25rem;
-    font-weight: 700;
-    user-select: none;
-    transition: background-color 0.3s;
-  }
-  .nav-btn:hover {
-    background-color: #00275c;
-  }
-
-  table.calendar {
-    border-collapse: collapse;
-    width: 100%;
-    table-layout: fixed;
-    font-family: monospace;
-    font-size: 0.85rem;
-    text-align: center;
-  }
-  table.calendar th,
-  table.calendar td {
-    border: 1px solid #b5c3e2;
-    padding: 8px 6px;
-    vertical-align: top;
-    position: relative;
-    cursor: pointer;
-    user-select: none;
-  }
-
-  table.calendar th {
-    color: #0047b3;
-    text-transform: uppercase;
-  }
-
-  table.calendar td:hover:not(.disabled) {
-    background-color: #e0ebff;
-  }
-
-  table.calendar td.disabled {
-    color: #ccc;
-    background: #f9f9f9;
-    cursor: default;
-  }
-
-  table.calendar td.today {
-    background-color: #0047b3;
-    color: white;
-    font-weight: 700;
-    border-radius: 4px;
-  }
-
-  /* Evento dentro do dia */
-  .event {
-    display: block;
-    margin-top: 4px;
-    background: #0047b3;
-    color: white;
-    font-size: 0.75rem;
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .event:hover {
-    background-color: #00275c;
-  }
-
-  .btn-delete-event {
-  margin-left: 8px;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  color: red;
-  font-weight: bold;
-}
-
-.btn-delete-event:hover {
-  transform: scale(1.2);
-}
-
-
-  /* Tooltip */
-  .tooltip {
-    position: absolute;
-    background: #0047b3;
-    color: white;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 0.85rem;
-    white-space: pre-line;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.25s;
-    z-index: 9999;
-  }
-  .tooltip.show {
-    opacity: 1;
-  }
-
-  /* Modal (fundo escurecido) */
-  .modal-bg {
-    position: fixed;
-    top: 0; left: 0; right:0; bottom:0;
-    background: rgba(0,0,0,0.6);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 10000;
-  }
-  .modal-bg.show {
-    display: flex;
-  }
-  /* Modal */
-  .modal {
-    background: white;
-    padding: 24px 30px;
-    border-radius: 14px;
-    width: 320px;
-    max-width: 90vw;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    position: relative;
-    animation: fadeInScale 0.3s ease forwards;
-  }
-  @keyframes fadeInScale {
-    from {
-      opacity: 0; transform: scale(0.7);
-    } to {
-      opacity: 1; transform: scale(1);
-    }
-  }
-  .modal h2 {
-    margin-top: 0;
-    margin-bottom: 16px;
-    color: #0047b3;
-    text-transform: lowercase;
-    font-weight: 700;
-  }
-  .modal textarea {
-    width: 100%;
-    height: 80px;
-    padding: 10px;
-    font-size: 1rem;
-    border-radius: 6px;
-    border: 1px solid #aaa;
-    resize: vertical;
-    font-family: inherit;
-  }
-  .modal textarea:focus {
-    outline: none;
-    border-color: #0047b3;
-    box-shadow: 0 0 8px rgba(0, 71, 179, 0.5);
-  }
-  .modal-buttons {
-    margin-top: 14px;
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-  }
-  .btn {
-    cursor: pointer;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 1rem;
-    border: none;
-    transition: background-color 0.3s;
-  }
-  .btn-save {
-    background-color: #0047b3;
-    color: white;
-  }
-  .btn-save:hover {
-    background-color: #00275c;
-  }
-  .btn-cancel {
-    background-color: #ccc;
-  }
-  .btn-cancel:hover {
-    background-color: #999;
-  }
-
-  /* Responsividade */
-  @media (max-width: 850px) {
-    .dashboard {
-      flex-direction: column;
-      align-items: center;
-    }
-    .sidebar,
-    .notes,
-    .calendar-container {
-      flex: none;
-      width: 100%;
-      max-width: 100%;
-    }
-  }
-</style>
-</head>
-<header class="topbar">
-  <div class="logo">
-    <img src="/imgs/logo.jpeg" alt="Protege Vacinas"/>
-  </div>
-  <div class="profile" tabindex="0" aria-label="Perfil do usuário">
-    <img src="user-avatar.png" alt="Avatar" class="avatar" />
-    <span class="username">Usuário</span>
-  </div>
-</header>
-
-<div class="dashboard">
-
-  <!-- Botões laterais -->
-  <div class="sidebar" role="navigation" aria-label="Menu principal">
-    <button class="btn-sidebar" type="button" aria-label="Unidades">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 4-7 13-7 13S5 13 5 9a7 7 0 0 1 7-7z" /><circle cx="12" cy="9" r="2" /></svg>
-      unidades
-    </button>
-    <button class="btn-sidebar" type="button" aria-label="Agendamento">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><line x1="12" y1="14" x2="12" y2="18" /><line x1="9" y1="17" x2="15" y2="17" /></svg>
-      agendamento
-    </button>
-    <button class="btn-sidebar" type="button" aria-label="Suporte">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M8 10h.01M12 10h.01M16 10h.01M9 16h6" /></svg>
-      suporte
-    </button>
-  </div>
-
-  <!-- Notas -->
-<div class="notes" aria-label="Próximos eventos">
-  <div class="notes-title">próximos eventos</div>
-  <div id="notesList"></div>
-</div>
-
-
-  <!-- Calendário -->
-  <section class="calendar-container" aria-label="Calendário de vacinação">
-    <div class="calendar-header">
-      <h3 class="calendar-title" id="monthYear"></h3>
-      <div class="nav-buttons" role="group" aria-label="Navegação entre meses">
-        <button class="nav-btn" id="prevMonth" aria-label="Mês anterior">&lt;</button>
-        <button class="nav-btn" id="nextMonth" aria-label="Próximo mês">&gt;</button>
-      </div>
-    </div>
-    <table class="calendar" role="grid" aria-labelledby="monthYear">
-      <thead>
-        <tr>
-          <th scope="col">seg</th>
-          <th scope="col">ter</th>
-          <th scope="col">qua</th>
-          <th scope="col">qui</th>
-          <th scope="col">sex</th>
-          <th scope="col">sab</th>
-          <th scope="col">dom</th>
-        </tr>
-      </thead>
-      <tbody id="calendarBody"></tbody>
-    </table>
-    <button id="clearEventsBtn" class="btn btn-cancel" style="margin-top:16px;">Limpar eventos</button>
-  </section>
-</div>
-
-<!-- Modal -->
-<div class="modal-bg" id="modalBg" role="dialog" aria-modal="true" aria-labelledby="modalTitle" aria-describedby="modalDesc">
-  <div class="modal" role="document">
-    <h2 id="modalTitle">Adicionar evento</h2>
-    <textarea id="eventText" placeholder="Digite o evento aqui..."></textarea>
-    <div class="modal-buttons">
-      <button class="btn btn-cancel" id="cancelBtn">Cancelar</button>
-      <button class="btn btn-save" id="saveBtn">Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Tooltip -->
-<div class="tooltip" id="tooltip"></div>
-
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-
-  const calendarBody = document.getElementById('calendarBody');
-  const monthYear = document.getElementById('monthYear');
-  const prevMonthBtn = document.getElementById('prevMonth');
-  const nextMonthBtn = document.getElementById('nextMonth');
-  const modalBg = document.getElementById('modalBg');
-  const eventText = document.getElementById('eventText');
-  const cancelBtn = document.getElementById('cancelBtn');
-  const saveBtn = document.getElementById('saveBtn');
-  const tooltip = document.getElementById('tooltip');
-  const clearEventsBtn = document.getElementById('clearEventsBtn');
-
-  let currentDate = new Date();
-  let currentMonth = currentDate.getMonth();
-  let currentYear = currentDate.getFullYear();
-  let selectedDateStr = null;
-
-  // Eventos { 'YYYY-MM-DD': ['evento1', ...] }
-  let events = JSON.parse(localStorage.getItem('pv_events')) || {};
-
-  const notesList = document.getElementById('notesList');
-
-function updateNotes() {
-  notesList.innerHTML = '';
-  const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-  // Pega todas as datas futuras
-  const futureDates = Object.keys(events)
-    .filter(date => date >= todayStr)
-    .sort();
-
-  if(futureDates.length === 0) {
-    notesList.innerHTML = '<div>Não há próximos eventos.</div>';
-    return;
-  }
-
-  let count = 0;
-  for (const dateStr of futureDates) {
-    for (let i = 0; i < events[dateStr].length; i++) {
-      if (count >= 5) return; // mostra no máximo 5
-
-      const ev = events[dateStr][i];
-      const dateObj = new Date(dateStr);
-      const formatted = `${dateObj.getDate()}/${dateObj.getMonth() + 1} - ${ev}`;
-
-      const div = document.createElement('div');
-      div.classList.add('note-event');
-
-      const span = document.createElement('span');
-      span.textContent = formatted;
-
-      // Botão de excluir
-      const btnDelete = document.createElement('button');
-      btnDelete.textContent = '❌';
-      btnDelete.classList.add('btn-delete-event');
-      btnDelete.addEventListener('click', () => {
-        removeEvent(dateStr, i);
-      });
-
-      div.appendChild(span);
-      div.appendChild(btnDelete);
-      notesList.appendChild(div);
-
-      count++;
-    }
-  }
-}
-  function removeEvent(dateStr, index) {
-    if (events[dateStr]) {
-      events[dateStr].splice(index, 1);
-      if (events[dateStr].length === 0) {
-        delete events[dateStr];
-      }
-      localStorage.setItem('pv_events', JSON.stringify(events));
-      generateCalendar(currentMonth, currentYear);
-      updateNotes();
-    }
-  }
-
-
-  function pad(n){ return n<10?'0'+n:n; }
-
-  function updateMonthYear(){
-    const months = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-    monthYear.textContent = `${months[currentMonth]} ${currentYear}`;
-  }
-
-  function generateCalendar(month, year){
-    calendarBody.innerHTML = '';
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month+1, 0);
-    let startDay = firstDay.getDay(); startDay = startDay===0?7:startDay;
-    const daysInMonth = lastDay.getDate();
-    const lastDayPrevMonth = new Date(year, month, 0).getDate();
-    const totalCells = 42;
-    let dayNum=1, nextMonthDay=1;
-
-    for(let i=1;i<=totalCells;i++){
-      let tr=i%7===1?document.createElement('tr'):calendarBody.lastElementChild;
-      if(!calendarBody.lastElementChild || i%7===1) calendarBody.appendChild(tr);
-      let td=document.createElement('td');
-
-      if(i<=startDay-1){ td.textContent = lastDayPrevMonth-(startDay-2)+i-1; td.classList.add('disabled'); }
-      else if(dayNum<=daysInMonth){
-        td.textContent=dayNum;
-        const dateStr=`${year}-${pad(month+1)}-${pad(dayNum)}`;
-        td.dataset.date=dateStr;
-        td.tabIndex=0;
-        td.setAttribute('role','gridcell');
-        td.setAttribute('aria-label',`Dia ${dayNum} de ${monthYear.textContent}`);
-
-        const today = new Date();
-        if(dayNum===today.getDate() && month===today.getMonth() && year===today.getFullYear())
-          td.classList.add('today');
-
-        if(events[dateStr]){
-          events[dateStr].forEach((evText, idx)=>{
-            const span=document.createElement('span');
-            span.className='event';
-            span.textContent=evText.length>12?evText.slice(0,12)+'...':evText;
-            span.title=evText;
-            td.appendChild(span);
-          });
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Protege Mais - Sistema de Vacinação</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        td.addEventListener('click',()=>{ selectedDateStr=dateStr; eventText.value=''; modalBg.classList.add('show'); eventText.focus(); });
-        td.addEventListener('keydown', e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); selectedDateStr=dateStr; eventText.value=''; modalBg.classList.add('show'); eventText.focus(); } });
-        dayNum++;
-      } else { td.textContent=nextMonthDay++; td.classList.add('disabled'); }
+        :root {
+            --primary: #2a7fba;
+            --primary-dark: #1e5a82;
+            --primary-light: #4da8da;
+            --secondary: #4caf50;
+            --secondary-dark: #3d8b40;
+            --light: #f5f9fc;
+            --dark: #333;
+            --gray: #7a7a7a;
+            --light-gray: #e0e0e0;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+            --shadow-hover: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
 
-      tr.appendChild(td);
-    }
-  }
+        body {
+            background-color: var(--light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
 
-  function closeModal(){ modalBg.classList.remove('show'); selectedDateStr=null; eventText.value=''; }
-  function saveEvent(){
-    const text = eventText.value.trim();
-    if(text && selectedDateStr){
-      if(!events[selectedDateStr]) events[selectedDateStr]=[];
-      events[selectedDateStr].push(text);
-      localStorage.setItem('pv_events', JSON.stringify(events));
-      generateCalendar(currentMonth,currentYear);
-      closeModal();
-    } else { alert('Digite um evento antes de salvar'); eventText.focus(); }
-  }
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
 
-  let tooltipTimeout;
-  document.body.addEventListener('mouseover', e=>{
-    if(e.target.classList.contains('event')){
-      clearTimeout(tooltipTimeout);
-      tooltip.textContent=e.target.title;
-      const rect=e.target.getBoundingClientRect();
-      tooltip.style.top=(rect.top-40)+'px';
-      tooltip.style.left=(rect.left+rect.width/2-tooltip.offsetWidth/2)+'px';
-      tooltip.classList.add('show');
-    }
-  });
-  document.body.addEventListener('mouseout', e=>{
-    if(e.target.classList.contains('event')){
-      tooltipTimeout=setTimeout(()=>tooltip.classList.remove('show'),200);
-    }
-  });
+        /* Header Styles */
+        header {
+            background: linear-gradient(135deg, white 0%, #f8fbff 100%);
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
 
-  prevMonthBtn.addEventListener('click',()=>{ currentMonth===0?(currentMonth=11,currentYear--):currentMonth--; updateMonthYear(); generateCalendar(currentMonth,currentYear); });
-  nextMonthBtn.addEventListener('click',()=>{ currentMonth===11?(currentMonth=0,currentYear++):currentMonth++; updateMonthYear(); generateCalendar(currentMonth,currentYear); });
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            transition: all 0.3s ease;
+        }
 
-  cancelBtn.addEventListener('click',closeModal);
-  saveBtn.addEventListener('click',saveEvent);
-  modalBg.addEventListener('click', e=>{ if(e.target===modalBg) closeModal(); });
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
 
-  clearEventsBtn.addEventListener('click', ()=>{
-    if(confirm('Deseja realmente apagar todos os eventos?')){
-      events={};
-      localStorage.removeItem('pv_events');
-      generateCalendar(currentMonth,currentYear);
-    }
-  });
+        .logo:hover {
+            transform: scale(1.02);
+        }
 
-  updateMonthYear();
-  generateCalendar(currentMonth,currentYear);
-});
-</script>
+        .logo img {
+            height: 42px;
+            transition: all 0.3s ease;
+        }
+
+        .logo h1 {
+            font-size: 1.6rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+        }
+
+        .logo span {
+            color: var(--secondary);
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 28px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--dark);
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+            padding: 5px 0;
+        }
+
+        nav a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--primary);
+        }
+
+        nav a:hover::after {
+            width: 100%;
+        }
+
+        .user-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .btn-outline {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-outline:hover {
+            background-color: var(--primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        /* Hero Section */
+        .hero {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 80px 0 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff" opacity="0.05"><polygon points="1000,0 1000,100 0,100"></polygon></svg>');
+            background-size: cover;
+        }
+
+        .hero h2 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            position: relative;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            max-width: 700px;
+            margin: 0 auto 30px;
+            position: relative;
+            animation: fadeInUp 1s ease;
+            opacity: 0.9;
+        }
+
+        /* Login Section */
+        .login-section {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 35px;
+            max-width: 500px;
+            margin: -60px auto 50px;
+            position: relative;
+            z-index: 10;
+            animation: fadeIn 0.8s ease;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-section h3 {
+            color: var(--primary);
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 1.7rem;
+            font-weight: 700;
+        }
+
+        .login-options {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .login-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        .login-option:hover {
+            border-color: var(--primary);
+            background-color: rgba(42, 127, 186, 0.05);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .login-option i {
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--light-gray), transparent);
+        }
+
+        .divider span {
+            padding: 0 15px;
+            color: var(--gray);
+            background: white;
+            font-weight: 500;
+        }
+
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.95rem;
+        }
+
+        .form-group input {
+            padding: 14px 16px;
+            border: 1px solid var(--light-gray);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(42, 127, 186, 0.1);
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+
+        .forgot-password {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .forgot-password:hover {
+            text-decoration: underline;
+            color: var(--primary-dark);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 80px 0;
+            background-color: white;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-title h2 {
+            color: var(--primary);
+            font-size: 2.3rem;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .section-title p {
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+            font-size: 1.1rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 12px;
+            padding: 30px 25px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            transition: all 0.4s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .feature-icon {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.7rem;
+            box-shadow: 0 5px 15px rgba(42, 127, 186, 0.3);
+        }
+
+        .feature-card h3 {
+            margin-bottom: 15px;
+            color: var(--primary-dark);
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+
+        .event {
+            background-color: var(--secondary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin-top: 5px;
+            display: block;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .event:hover {
+            transform: translateX(3px);
+        }
+
+        .event.vaccine {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        }
+
+        .event.medicine {
+            background: linear-gradient(135deg, var(--warning) 0%, #e68900 100%);
+        }
+
+        /* Units Section */
+        .units-section {
+            padding: 80px 0;
+            background-color: white;
+        }
+
+        .units-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .unit-card {
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: all 0.4s ease;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .unit-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .unit-image {
+            height: 180px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .unit-image::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="%23ffffff" opacity="0.1"><polygon points="1000,0 1000,100 0,100"></polygon></svg>');
+            background-size: cover;
+        }
+
+        .unit-content {
+            padding: 25px;
+        }
+
+        .unit-content h3 {
+            margin-bottom: 15px;
+            color: var(--primary-dark);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .unit-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .unit-info div {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--gray);
+        }
+
+        .unit-info i {
+            color: var(--primary);
+            width: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 50px 0 20px;
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .footer-column h4 {
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            color: white;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 10px;
+        }
+
+        .footer-column h4::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 40px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .footer-column ul {
+            list-style: none;
+        }
+
+        .footer-column ul li {
+            margin-bottom: 12px;
+        }
+
+        .footer-column a {
+            color: #d1d8e0;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .footer-column a:hover {
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .social-links {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .social-links a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .social-links a:hover {
+            background: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #d1d8e0;
+            font-size: 0.9rem;
+        }
+
+        /* Animações */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Styles */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 20px;
+            }
+
+            nav ul {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .hero {
+                padding: 60px 0 40px;
+            }
+
+            .hero h2 {
+                font-size: 2.2rem;
+            }
+
+            .hero p {
+                font-size: 1.1rem;
+            }
+
+            .login-section {
+                margin: -40px auto 40px;
+                padding: 25px;
+            }
+
+            .section-title h2 {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            nav ul {
+                gap: 10px;
+            }
+
+            .user-actions {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .user-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .day-number {
+                font-size: 0.9rem;
+            }
+
+            .hero h2 {
+                font-size: 1.8rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .login-section {
+                padding: 20px;
+            }
+
+            .form-actions {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                  <h1>Protege</h1>
+                  <img src="/imgs/logo3.png" alt="Protege Mais Logo">
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#"><i class="fas fa-home"></i> Início</a></li>
+                        <li><a href="#"><i class="fas fa-map-marker-alt"></i> Unidades</a></li>
+                        <li><a href="#"><i class="fas fa-headset"></i> Suporte</a></li>
+                    </ul>
+                </nav>
+                <div class="user-actions">
+                    <button class="btn btn-outline"><i class="fas fa-user-plus"></i> Cadastrar</button>
+                    <button class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Entrar</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <h2>Proteja sua saúde com a Protege Mais</h2>
+            <p>Agende suas vacinas de forma rápida e segura. Encontre a unidade mais próxima e mantenha sua vacinação em dia.</p>
+        </div>
+    </section>
+
+    <!-- Login Section -->
+    <section class="container">
+        <div class="login-section">
+            <h3>Acesse sua conta</h3>
+            <div class="login-options">
+                <div class="login-option">
+                    <i class="fas fa-user"></i>
+                    <span>Usuário</span>
+                </div>
+                <div class="login-option">
+                    <i class="fas fa-id-card"></i>
+                    <span>Número SUS</span>
+                </div>
+                <div class="login-option">
+                    <i class="fas fa-envelope"></i>
+                    <span>Email ou Telefone</span>
+                </div>
+            </div>
+            <div class="divider">
+                <span>ou</span>
+            </div>
+            <form class="login-form">
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" placeholder="Digite seu usuário">
+                </div>
+                <div class="form-group">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" placeholder="Digite sua senha">
+                </div>
+                <div class="form-actions">
+                    <div class="remember-me">
+                        <input type="checkbox" id="remember">
+                        <label for="remember">Lembrar-me</label>
+                    </div>
+                    <a href="#" class="forgot-password">Esqueci minha senha</a>
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 15px; width: 100%;">
+                    <i class="fas fa-sign-in-alt"></i> Entrar
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nossos Serviços</h2>
+                <p>Oferecemos uma gama completa de serviços para manter sua saúde em dia</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-syringe"></i>
+                    </div>
+                    <h3>Vacinação</h3>
+                    <p>Agende e acompanhe todas as suas vacinas em um só lugar.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <h3>Agendamento</h3>
+                    <p>Marque consultas e vacinas de forma rápida e descomplicada.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <h3>Unidades Próximas</h3>
+                    <p>Encontre a unidade de saúde mais próxima de você.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-file-medical"></i>
+                    </div>
+                    <h3>Carteira Digital</h3>
+                    <p>Tenha sua carteira de vacinação sempre à mão, de forma digital.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Units Section -->
+    <section class="units-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Nossas Unidades</h2>
+                <p>Encontre a unidade mais próxima de você</p>
+            </div>
+            <div class="units-grid">
+                <div class="unit-card">
+                    <div class="unit-image">
+                        <i class="fas fa-hospital"></i>
+                    </div>
+                    <div class="unit-content">
+                        <h3>UBS Centro</h3>
+                        <div class="unit-info">
+                            <div><i class="fas fa-map-marker-alt"></i> Rua Principal, 123 - Centro</div>
+                            <div><i class="fas fa-phone"></i> (81) 3456-7890</div>
+                            <div><i class="fas fa-clock"></i> Seg-Sex: 7h-18h | Sáb: 7h-12h</div>
+                        </div>
+                        <a href="https://www.google.com/maps" target="_blank" class="btn btn-outline" style="width: 100%; text-align: center;">
+                            <i class="fas fa-directions"></i> Ver no Google Maps
+                        </a>
+                    </div>
+                </div>
+                <div class="unit-card">
+                    <div class="unit-image">
+                        <i class="fas fa-clinic-medical"></i>
+                    </div>
+                    <div class="unit-content">
+                        <h3>UBS Zona Norte</h3>
+                        <div class="unit-info">
+                            <div><i class="fas fa-map-marker-alt"></i> Av. Norte, 456 - Zona Norte</div>
+                            <div><i class="fas fa-phone"></i> (81) 3456-7891</div>
+                            <div><i class="fas fa-clock"></i> Seg-Sex: 7h-17h | Sáb: 7h-12h</div>
+                        </div>
+                        <a href="https://www.google.com/maps" target="_blank" class="btn btn-outline" style="width: 100%; text-align: center;">
+                            <i class="fas fa-directions"></i> Ver no Google Maps
+                        </a>
+                    </div>
+                </div>
+                <div class="unit-card">
+                    <div class="unit-image">
+                        <i class="fas fa-first-aid"></i>
+                    </div>
+                    <div class="unit-content">
+                        <h3>UBS Zona Sul</h3>
+                        <div class="unit-info">
+                            <div><i class="fas fa-map-marker-alt"></i> Rua Sul, 789 - Zona Sul</div>
+                            <div><i class="fas fa-phone"></i> (81) 3456-7892</div>
+                            <div><i class="fas fa-clock"></i> Seg-Sex: 8h-18h | Sáb: 8h-12h</div>
+                        </div>
+                        <a href="https://www.google.com/maps" target="_blank" class="btn btn-outline" style="width: 100%; text-align: center;">
+                            <i class="fas fa-directions"></i> Ver no Google Maps
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>Protege Mais</h4>
+                    <p style="color: #ccc; margin-bottom: 15px;">Sua saúde em primeiro lugar. Agende vacinas e consultas de forma rápida e segura.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Links Rápidos</h4>
+                    <ul>
+                        <li><a href="#">Início</a></li>
+                        <li><a href="#">Unidades</a></li>
+                        <li><a href="#">Agendamento</a></li>
+                        <li><a href="#">Suporte</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Serviços</h4>
+                    <ul>
+                        <li><a href="#">Vacinação</a></li>
+                        <li><a href="#">Agendamento Online</a></li>
+                        <li><a href="#">Carteira Digital</a></li>
+                        <li><a href="#">Campanhas</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Contato</h4>
+                    <ul>
+                        <li><i class="fas fa-phone"></i> (81) 3456-7890</li>
+                        <li><i class="fas fa-envelope"></i> contato@protegemais.com</li>
+                        <li><i class="fas fa-map-marker-alt"></i> Rua Principal, 123 - Centro</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2023 Protege Mais. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
